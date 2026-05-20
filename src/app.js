@@ -1,12 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const swaggerUi = require('swagger-ui-express');
 const accountRoutes = require('./routes/accountRoutes');
+const swaggerSpec = require('./swagger');
 require('dotenv').config();
 
 const app = express();
 
-// CORS configuration - Allow both localhost and production
+// CORS configuration
 const allowedOrigins = [
   'http://localhost:4200',
   'https://angular-auth-frontend.onrender.com',
@@ -15,10 +17,9 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, postman)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('The CORS policy for this site does not allow access from the specified Origin.'), false);
+      return callback(new Error('CORS policy does not allow this origin'), false);
     }
     return callback(null, true);
   },
@@ -29,6 +30,9 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+
+// API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/accounts', accountRoutes);
 
