@@ -1,7 +1,7 @@
 const mysql = require('mysql2');
 require('dotenv').config();
 
-// Use DB_URL from environment variables (Aiven cloud MySQL)
+// Create connection pool using DB_URL
 const pool = mysql.createPool(process.env.DB_URL);
 
 module.exports = pool.promise();

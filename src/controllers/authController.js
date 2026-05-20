@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const User = require('../models/User');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
-const { sendVerificationEmail, sendResetPasswordEmail } = require('../utils/email');
+const { sendVerificationEmail, sendResetPasswordEmail } = require('../utils/brevo');
 
 const register = async (req, res) => {
   try {
@@ -30,7 +30,7 @@ const register = async (req, res) => {
       verificationToken
     });
 
-    await sendVerificationEmail(email, verificationToken);
+    await sendVerificationEmail(email, firstName, verificationToken);
 
     res.status(201).json({ message: 'Registration successful! Please check your email for verification.' });
   } catch (error) {
@@ -178,7 +178,7 @@ const forgotPassword = async (req, res) => {
       const resetToken = crypto.randomBytes(32).toString('hex');
       const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await User.updateResetToken(email, resetToken, expires);
-      await sendResetPasswordEmail(email, resetToken);
+      await sendResetPasswordEmail(email, user.firstName, resetToken);
     }
 
     res.json({ message: 'If an account exists with that email, you will receive password reset instructions.' });
