@@ -10,7 +10,7 @@ const sendVerificationEmail = async (to, firstName, token) => {
   const verifyUrl = `${process.env.CLIENT_URL}/account/verify-email?token=${token}`;
   
   const sendSmtpEmail = {
-    sender: { name: "AuthMaster", email: "no-reply@authmaster.com" },
+    sender: { name: "AuthMaster", email: "no-reply@authmaster.b-revo.com" },
     to: [{ email: to }],
     subject: "Verify Your Email - AuthMaster",
     htmlContent: `
@@ -30,7 +30,7 @@ const sendVerificationEmail = async (to, firstName, token) => {
     const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log(`Email sent to ${to}`, data.messageId);
   } catch (error) {
-    console.error('Brevo error:', error);
+    console.error('Brevo error:', error.response?.body || error);
   }
 };
 
@@ -38,7 +38,7 @@ const sendResetPasswordEmail = async (to, firstName, token) => {
   const resetUrl = `${process.env.CLIENT_URL}/account/reset-password?token=${token}`;
   
   const sendSmtpEmail = {
-    sender: { name: "AuthMaster", email: "no-reply@authmaster.com" },
+    sender: { name: "AuthMaster", email: "no-reply@authmaster.b-revo.com" },
     to: [{ email: to }],
     subject: "Reset Your Password - AuthMaster",
     htmlContent: `
@@ -58,7 +58,7 @@ const sendResetPasswordEmail = async (to, firstName, token) => {
     const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log(`Reset email sent to ${to}`);
   } catch (error) {
-    console.error('Brevo reset error:', error);
+    console.error('Brevo reset error:', error.response?.body || error);
   }
 };
 
