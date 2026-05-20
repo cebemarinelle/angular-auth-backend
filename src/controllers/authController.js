@@ -76,8 +76,8 @@ const login = async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.COOKIE_SECURE === 'true',
+      sameSite: process.env.COOKIE_SAMESITE || 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
@@ -126,8 +126,8 @@ const refreshToken = async (req, res) => {
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.COOKIE_SECURE === 'true',
+      sameSite: process.env.COOKIE_SAMESITE || 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 

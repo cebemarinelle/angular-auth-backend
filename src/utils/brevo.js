@@ -7,10 +7,10 @@ apiKey.apiKey = process.env.BREVO_API_KEY;
 const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
 const sendVerificationEmail = async (to, firstName, token) => {
-  const verifyUrl = `${process.env.CLIENT_URL}/account/verify-email?token=${token}`;
+  const verifyUrl = `${process.env.FRONTEND_URL}/account/verify-email?token=${token}`;
   
   const sendSmtpEmail = {
-    sender: { name: "AuthMaster", email: "smtp@brevo.com" },
+    sender: { name: "AuthMaster", email: process.env.EMAIL_FROM },
     to: [{ email: to }],
     subject: "Verify Your Email - AuthMaster",
     htmlContent: `
@@ -19,7 +19,7 @@ const sendVerificationEmail = async (to, firstName, token) => {
           <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
             <h2 style="color: #4F46E5; text-align: center;">Verify Your Email</h2>
             <p>Hi ${firstName},</p>
-            <p>Thank you for registering with AuthMaster. Please click the button below to verify your email address:</p>
+            <p>Thank you for registering with AuthMaster. Please verify your email address to complete your registration.</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${verifyUrl}" style="display: inline-block; background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
                 Verify Email Address
@@ -38,7 +38,7 @@ const sendVerificationEmail = async (to, firstName, token) => {
   
   try {
     const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Verification email sent to ${to}`, data.messageId);
+    console.log(`✅ Verification email sent to ${to} from ${process.env.EMAIL_FROM}`);
     return data;
   } catch (error) {
     console.error('❌ Brevo error:', error.response?.body || error.message);
@@ -47,10 +47,10 @@ const sendVerificationEmail = async (to, firstName, token) => {
 };
 
 const sendResetPasswordEmail = async (to, firstName, token) => {
-  const resetUrl = `${process.env.CLIENT_URL}/account/reset-password?token=${token}`;
+  const resetUrl = `${process.env.FRONTEND_URL}/account/reset-password?token=${token}`;
   
   const sendSmtpEmail = {
-    sender: { name: "AuthMaster", email: "smtp@brevo.com" },
+    sender: { name: "AuthMaster", email: process.env.EMAIL_FROM },
     to: [{ email: to }],
     subject: "Reset Your Password - AuthMaster",
     htmlContent: `
