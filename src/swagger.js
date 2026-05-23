@@ -10,7 +10,7 @@ const options = {
     },
     servers: [
       {
-        url: process.env.FRONTEND_URL || 'http://localhost:4000',
+        url: process.env.API_URL || 'https://angular-auth-backend-1-crp5.onrender.com',
         description: 'API Server'
       }
     ],
