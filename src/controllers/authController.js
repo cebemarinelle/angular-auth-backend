@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const User = require('../models/User');
+const db = require('../config/database');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 const { sendVerificationEmail, sendResetPasswordEmail } = require('../utils/brevo');
 
@@ -172,17 +173,30 @@ const revokeToken = async (req, res) => {
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+    console.log('📧 Forgot password for:', email);
+    
     const user = await User.findByEmail(email);
 
     if (user) {
       const resetToken = crypto.randomBytes(32).toString('hex');
-      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      await User.updateResetToken(email, resetToken, expires);
+      console.log('Generated token:', resetToken);
+      
+      // Use MySQL's NOW() to avoid timezone issues
+      await db.execute(
+        'UPDATE users SET resetToken = ?, resetTokenExpires = DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE email = ?',
+        [resetToken, email]
+      );
+      
       await sendResetPasswordEmail(email, user.firstName, resetToken);
+      console.log('✅ Reset email sent to:', email);
+      console.log('🔗 Reset link:', `${process.env.FRONTEND_URL}/account/reset-password?token=${resetToken}`);
+    } else {
+      console.log('❌ User not found:', email);
     }
 
     res.json({ message: 'If an account exists with that email, you will receive password reset instructions.' });
   } catch (error) {
+    console.error('❌ Forgot password error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -190,15 +204,23 @@ const forgotPassword = async (req, res) => {
 const validateResetToken = async (req, res) => {
   try {
     const { token } = req.body;
-    const users = await User.getAll();
-    const user = users.find(u => u.resetToken === token && new Date(u.resetTokenExpires) > new Date());
+    console.log('🔍 Validating token:', token);
+    
+    // Query the database directly using MySQL NOW()
+    const [rows] = await db.execute(
+      'SELECT * FROM users WHERE resetToken = ? AND resetTokenExpires > NOW()',
+      [token]
+    );
 
-    if (!user) {
+    if (rows.length === 0) {
+      console.log('❌ No valid user found with this token');
       return res.status(400).json({ message: 'Invalid or expired token' });
     }
 
+    console.log('✅ Token valid for user:', rows[0].email);
     res.json({ message: 'Token is valid' });
   } catch (error) {
+    console.error('❌ Validation error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -206,15 +228,25 @@ const validateResetToken = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
+    console.log('🔑 Resetting password for token:', token);
+    
     const hashedPassword = await bcrypt.hash(password, 10);
-    const reset = await User.resetPassword(token, hashedPassword);
+    
+    // Update password where token is valid and not expired
+    const [result] = await db.execute(
+      'UPDATE users SET password = ?, resetToken = NULL, resetTokenExpires = NULL WHERE resetToken = ? AND resetTokenExpires > NOW()',
+      [hashedPassword, token]
+    );
 
-    if (!reset) {
+    if (result.affectedRows === 0) {
+      console.log('❌ No valid token found');
       return res.status(400).json({ message: 'Invalid or expired token' });
     }
 
+    console.log('✅ Password reset successful');
     res.json({ message: 'Password reset successful' });
   } catch (error) {
+    console.error('❌ Reset password error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
