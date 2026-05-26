@@ -39,7 +39,8 @@ class User {
   }
 
   static async updateRefreshTokens(id, refreshTokens) {
-    await db.execute('UPDATE users SET refreshTokens = ? WHERE id = ?', [JSON.stringify(refreshTokens), id]);
+    // Remove JSON.stringify - MySQL JSON type accepts object directly
+    await db.execute('UPDATE users SET refreshTokens = ? WHERE id = ?', [refreshTokens, id]);
   }
 
   static async updateUser(id, userData) {

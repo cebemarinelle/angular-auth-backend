@@ -1,11 +1,11 @@
 const mysql = require('mysql2');
 
 const pool = mysql.createPool({
-  host: 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
-  port: 4000,
-  user: '2Kou6gzZ7tnCrMF.root',
-  password: 'ZXL36zgyu2SvIhG1',
-  database: 'test',
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   ssl: {
     rejectUnauthorized: true
   },
@@ -16,7 +16,6 @@ const pool = mysql.createPool({
 
 const promisePool = pool.promise();
 
-// This creates an object with the execute method that User.js expects
 const db = {
   execute: async (sql, params) => {
     const [rows] = await promisePool.execute(sql, params);
