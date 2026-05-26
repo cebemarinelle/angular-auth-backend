@@ -58,20 +58,39 @@ const verifyEmail = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log('🔐 Login attempt for:', email);
+    
     const user = await User.findByEmail(email);
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
+      console.log('❌ Invalid credentials');
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     if (!user.isVerified) {
+      console.log('❌ Email not verified');
       return res.status(401).json({ message: 'Please verify your email before logging in' });
     }
+
+    console.log('✅ Credentials valid');
 
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken();
 
-    let refreshTokens = user.refreshTokens ? JSON.parse(user.refreshTokens) : [];
+    // FIXED: Better check for empty string, null, and invalid values
+    let refreshTokens = [];
+    if (user.refreshTokens && user.refreshTokens !== '' && user.refreshTokens !== '[]' && user.refreshTokens !== 'null') {
+      try {
+        refreshTokens = JSON.parse(user.refreshTokens);
+        if (!Array.isArray(refreshTokens)) {
+          refreshTokens = [];
+        }
+      } catch (e) {
+        console.log('Parse error, using empty array');
+        refreshTokens = [];
+      }
+    }
+    
     refreshTokens.push(refreshToken);
     await User.updateRefreshTokens(user.id, refreshTokens);
 
@@ -81,6 +100,8 @@ const login = async (req, res) => {
       sameSite: process.env.COOKIE_SAMESITE || 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
+
+    console.log('🎉 Login successful for:', email);
 
     res.json({
       id: user.id,
@@ -92,7 +113,9 @@ const login = async (req, res) => {
       jwtToken: accessToken
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('💥 LOGIN ERROR:', error);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ message: 'Server error: ' + (error.message || 'Unknown error') });
   }
 };
 
@@ -106,7 +129,18 @@ const refreshToken = async (req, res) => {
     const users = await User.getAll();
     let foundUser = null;
     for (const user of users) {
-      const tokens = user.refreshTokens ? JSON.parse(user.refreshTokens) : [];
+      // FIXED: Handle empty string, null, and invalid values
+      let tokens = [];
+      if (user.refreshTokens && user.refreshTokens !== '' && user.refreshTokens !== '[]' && user.refreshTokens !== 'null') {
+        try {
+          tokens = JSON.parse(user.refreshTokens);
+          if (!Array.isArray(tokens)) {
+            tokens = [];
+          }
+        } catch (e) {
+          tokens = [];
+        }
+      }
       if (tokens.includes(refreshToken)) {
         foundUser = user;
         break;
@@ -120,7 +154,17 @@ const refreshToken = async (req, res) => {
     const newAccessToken = generateAccessToken(foundUser.id);
     const newRefreshToken = generateRefreshToken();
 
-    let refreshTokens = foundUser.refreshTokens ? JSON.parse(foundUser.refreshTokens) : [];
+    let refreshTokens = [];
+    if (foundUser.refreshTokens && foundUser.refreshTokens !== '' && foundUser.refreshTokens !== '[]' && foundUser.refreshTokens !== 'null') {
+      try {
+        refreshTokens = JSON.parse(foundUser.refreshTokens);
+        if (!Array.isArray(refreshTokens)) {
+          refreshTokens = [];
+        }
+      } catch (e) {
+        refreshTokens = [];
+      }
+    }
     refreshTokens = refreshTokens.filter(t => t !== refreshToken);
     refreshTokens.push(newRefreshToken);
     await User.updateRefreshTokens(foundUser.id, refreshTokens);
@@ -142,6 +186,7 @@ const refreshToken = async (req, res) => {
       jwtToken: newAccessToken
     });
   } catch (error) {
+    console.error('Refresh token error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -155,7 +200,17 @@ const revokeToken = async (req, res) => {
 
     const users = await User.getAll();
     for (const user of users) {
-      const tokens = user.refreshTokens ? JSON.parse(user.refreshTokens) : [];
+      let tokens = [];
+      if (user.refreshTokens && user.refreshTokens !== '' && user.refreshTokens !== '[]' && user.refreshTokens !== 'null') {
+        try {
+          tokens = JSON.parse(user.refreshTokens);
+          if (!Array.isArray(tokens)) {
+            tokens = [];
+          }
+        } catch (e) {
+          tokens = [];
+        }
+      }
       if (tokens.includes(refreshToken)) {
         const newTokens = tokens.filter(t => t !== refreshToken);
         await User.updateRefreshTokens(user.id, newTokens);
@@ -181,7 +236,6 @@ const forgotPassword = async (req, res) => {
       const resetToken = crypto.randomBytes(32).toString('hex');
       console.log('Generated token:', resetToken);
       
-      // Use MySQL's NOW() to avoid timezone issues
       await db.execute(
         'UPDATE users SET resetToken = ?, resetTokenExpires = DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE email = ?',
         [resetToken, email]
@@ -206,7 +260,6 @@ const validateResetToken = async (req, res) => {
     const { token } = req.body;
     console.log('🔍 Validating token:', token);
     
-    // Query the database directly using MySQL NOW()
     const [rows] = await db.execute(
       'SELECT * FROM users WHERE resetToken = ? AND resetTokenExpires > NOW()',
       [token]
@@ -232,7 +285,6 @@ const resetPassword = async (req, res) => {
     
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Update password where token is valid and not expired
     const [result] = await db.execute(
       'UPDATE users SET password = ?, resetToken = NULL, resetTokenExpires = NULL WHERE resetToken = ? AND resetTokenExpires > NOW()',
       [hashedPassword, token]
