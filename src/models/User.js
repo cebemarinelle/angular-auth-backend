@@ -39,14 +39,13 @@ class User {
   }
 
   static async updateRefreshTokens(id, refreshTokens) {
-    // Convert array to JSON string for MySQL TEXT column
     const tokensString = JSON.stringify(refreshTokens || []);
     await db.execute('UPDATE users SET refreshTokens = ? WHERE id = ?', [tokensString, id]);
   }
 
   static async updateUser(id, userData) {
     const { title, firstName, lastName, email, role, password } = userData;
-    if (password) {
+    if (password && password.trim() !== '') {
       await db.execute(
         'UPDATE users SET title = ?, firstName = ?, lastName = ?, email = ?, role = ?, password = ? WHERE id = ?',
         [title, firstName, lastName, email, role, password, id]
