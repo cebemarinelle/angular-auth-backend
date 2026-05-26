@@ -55,15 +55,20 @@ const updateAccount = async (req, res) => {
     const userId = req.params.id;
     
     console.log('📝 Updating user:', userId);
+    console.log('Received data:', { title, firstName, lastName, email, role, passwordLength: password ? password.length : 0 });
     
     const updateData = { title, firstName, lastName, email, role };
     
-    // Only hash and include password if it's provided and NOT empty
-    if (password && password.trim() !== '') {
-      updateData.password = await bcrypt.hash(password, 10);
-      console.log('✅ Password updated');
+    // Check if password exists and is a non-empty string
+    const hasValidPassword = password && typeof password === 'string' && password.trim().length > 0;
+    
+    if (hasValidPassword) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateData.password = hashedPassword;
+      console.log('✅ Password will be updated');
     } else {
-      console.log('⏭️ Skipping password update (field empty)');
+      console.log('⏭️ Password field empty - keeping existing password');
+      // Don't include password in updateData
     }
     
     await User.updateUser(userId, updateData);
@@ -73,6 +78,7 @@ const updateAccount = async (req, res) => {
     res.json(updatedUser);
   } catch (error) {
     console.error('💥 Update account error:', error);
+    console.error('Stack:', error.stack);
     res.status(500).json({ message: 'Server error: ' + (error.message || 'Unknown error') });
   }
 };
