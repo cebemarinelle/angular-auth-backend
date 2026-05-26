@@ -55,11 +55,22 @@ const updateAccount = async (req, res) => {
     const userId = req.params.id;
     
     console.log('📝 Updating user:', userId);
-    console.log('Received data:', { title, firstName, lastName, email, role, passwordLength: password ? password.length : 0 });
     
-    const updateData = { title, firstName, lastName, email, role };
+    // Get the existing user to preserve the current role if not sent
+    const existingUser = await User.findById(userId);
     
-    // Check if password exists and is a non-empty string
+    // Use existing role if not provided, otherwise use the new role
+    const finalRole = role || existingUser?.role || 'User';
+    
+    const updateData = { 
+      title, 
+      firstName, 
+      lastName, 
+      email, 
+      role: finalRole 
+    };
+    
+    // Check if password is provided AND has actual content
     const hasValidPassword = password && typeof password === 'string' && password.trim().length > 0;
     
     if (hasValidPassword) {
@@ -67,8 +78,7 @@ const updateAccount = async (req, res) => {
       updateData.password = hashedPassword;
       console.log('✅ Password will be updated');
     } else {
-      console.log('⏭️ Password field empty - keeping existing password');
-      // Don't include password in updateData
+      console.log('⏭️ No valid password provided - keeping existing password');
     }
     
     await User.updateUser(userId, updateData);

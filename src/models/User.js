@@ -46,19 +46,20 @@ class User {
   static async updateUser(id, userData) {
     const { title, firstName, lastName, email, role, password } = userData;
     
-    // Check if password exists and is not empty and not just whitespace
-    const hasValidPassword = password && typeof password === 'string' && password.trim().length > 0;
+    console.log('updateUser received:', { id, title, firstName, lastName, email, role, hasPassword: !!password });
     
-    if (hasValidPassword) {
+    if (password && password !== '') {
       await db.execute(
         'UPDATE users SET title = ?, firstName = ?, lastName = ?, email = ?, role = ?, password = ? WHERE id = ?',
         [title, firstName, lastName, email, role, password, id]
       );
+      console.log('✅ Updated with password');
     } else {
       await db.execute(
         'UPDATE users SET title = ?, firstName = ?, lastName = ?, email = ?, role = ? WHERE id = ?',
         [title, firstName, lastName, email, role, id]
       );
+      console.log('✅ Updated without password');
     }
   }
 
