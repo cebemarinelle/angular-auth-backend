@@ -39,8 +39,9 @@ class User {
   }
 
   static async updateRefreshTokens(id, refreshTokens) {
-    // Remove JSON.stringify - MySQL JSON type accepts object directly
-    await db.execute('UPDATE users SET refreshTokens = ? WHERE id = ?', [refreshTokens, id]);
+    // Convert array to JSON string for MySQL TEXT column
+    const tokensString = JSON.stringify(refreshTokens || []);
+    await db.execute('UPDATE users SET refreshTokens = ? WHERE id = ?', [tokensString, id]);
   }
 
   static async updateUser(id, userData) {
