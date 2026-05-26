@@ -1,4 +1,4 @@
-const app = require('./app');
+const app = require('./src/app');  // Correct path - app.js is in src folder
 const db = require('./src/config/database');
 
 const PORT = process.env.PORT || 4000;
@@ -24,7 +24,7 @@ async function startServer() {
     process.exit(1);
   }
   
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📝 API Docs available at http://localhost:${PORT}/api-docs`);
   });
