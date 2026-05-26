@@ -16,4 +16,12 @@ const pool = mysql.createPool({
 
 const promisePool = pool.promise();
 
-module.exports = { pool, promisePool };
+// This creates an object with the execute method that User.js expects
+const db = {
+  execute: async (sql, params) => {
+    const [rows] = await promisePool.execute(sql, params);
+    return [rows];
+  }
+};
+
+module.exports = db;
